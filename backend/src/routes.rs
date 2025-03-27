@@ -3,6 +3,7 @@
 // src/routes.rs
 
 use crate::state::AppState;
+use crate::websocket::ws_index;
 use actix_web::{web, HttpResponse, Responder};
 use std::sync::{Arc, Mutex};
 
@@ -39,5 +40,6 @@ pub fn init_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(web::resource("/start").route(web::post().to(start_handler)));
     cfg.service(web::resource("/stop").route(web::post().to(stop_handler)));
     cfg.service(web::resource("/status").route(web::get().to(status_handler)));
+    cfg.service(web::resource("/ws").route(web::get().to(ws_index)));
     // You can later add additional endpoints, such as a WebSocket route for /console.
 }

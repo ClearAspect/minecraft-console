@@ -2,7 +2,7 @@
 
 use crate::server::MinecraftServer;
 use std::io::Result;
-use tokio::sync::mpsc::UnboundedSender;
+use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
 /// AppState holds the shared state for your application.
 pub struct AppState {
@@ -45,5 +45,12 @@ impl AppState {
     /// Returns true if the Minecraft server is currently running.
     pub fn is_running(&self) -> bool {
         self.minecraft_server.is_some()
+    }
+
+    /// Creates a new log receiver for WebSocket connections
+    pub fn create_log_receiver(&self) -> UnboundedReceiver<String> {
+        let (sender, receiver) = unbounded_channel();
+        // TODO: Store sender in a Vec of subscribers to broadcast to multiple clients
+        receiver
     }
 }
