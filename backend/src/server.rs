@@ -2,9 +2,9 @@
 
 use std::io::Result;
 use std::process::Stdio;
-use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::Command;
-use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
+use tokio::sync::mpsc::UnboundedSender;
 
 /// Struct representing the Minecraft server process.
 pub struct MinecraftServer {
@@ -22,13 +22,18 @@ impl MinecraftServer {
     pub async fn start(log_sender: UnboundedSender<String>) -> Result<Self> {
         // Replace the path and any arguments with your server's executable details.
         // TODO
-        let mut command = Command::new("R:\\GameServers\\minecraftNeoforge1.21.1\\run.bat");
+        // let mut command = Command::new("R:\\GameServers\\minecraftNeoforge1.21.1\\run.bat");
+        let mut command = Command::new("/home/roanm/Downloads/Server/run.sh");
+        // Set the working directory here.
+        command.current_dir("/home/roanm/Downloads/Server");
         // Optionally add any necessary command-line arguments:
         // command.arg("some_arg");
 
         // Set up the process to capture stdout and stderr.
-        command.stdout(Stdio::piped());
-        command.stderr(Stdio::piped());
+        command
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped());
 
         // Spawn the process.
         let mut child = command.spawn()?;
@@ -69,9 +74,15 @@ impl MinecraftServer {
     /// have a more graceful shutdown command.
     pub async fn stop(&mut self) -> Result<()> {
         if let Some(child) = &mut self.child {
-            // Attempt to kill the process.
-            child.kill().await?;
-            // Wait for the process to exit.
+            // Attempt to gracefully shut down the server by sending "stop\n"
+            if let Some(stdin) = child.stdin.as_mut() {
+                stdin.write_all(b"stop\n").await?;
+                stdin.flush().await?;
+            } else {
+                // If for some reason stdin is not available, fallback to killing the process.
+                child.kill().await?;
+            }
+            // Wait for the server process to exit gracefully.
             child.wait().await?;
             self.child = None;
         }
@@ -81,5 +92,28 @@ impl MinecraftServer {
     /// Checks if the Minecraft server process is currently running.
     pub fn is_running(&self) -> bool {
         self.child.is_some()
+    }
+
+    /// Sends a command to the Minecraft server console.
+    ///
+    /// # Arguments
+    /// * `command` - The command to send to the server
+    ///
+    /// # Returns
+    /// * `Ok(())` if the command was sent successfully
+    /// * `Err` if there was an error sending the command
+    pub async fn send_command(&mut self, command: &str) -> Result<()> {
+        if let Some(child) = &mut self.child {
+            if let Some(stdin) = child.stdin.as_mut() {
+                // Append newline to ensure command is executed
+                stdin.write_all(format!("{}\n", command).as_bytes()).await?;
+                stdin.flush().await?;
+                return Ok(());
+            }
+        }
+        Err(std::io::Error::new(
+            std::io::ErrorKind::NotConnected,
+            "Server is not running or stdin is not available",
+        ))
     }
 }

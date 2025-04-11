@@ -47,6 +47,18 @@ impl AppState {
         self.minecraft_server.is_some()
     }
 
+    /// Sends a command to the Minecraft server console.
+    pub async fn send_command(&mut self, command: &str) -> Result<()> {
+        if let Some(server) = &mut self.minecraft_server {
+            server.send_command(command).await
+        } else {
+            Err(std::io::Error::new(
+                std::io::ErrorKind::NotConnected,
+                "Minecraft server is not running",
+            ))
+        }
+    }
+
     /// Creates a new log receiver for WebSocket connections
     pub fn create_log_receiver(&self) -> UnboundedReceiver<String> {
         let (sender, receiver) = unbounded_channel();
