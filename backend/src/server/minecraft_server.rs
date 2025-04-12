@@ -1,4 +1,8 @@
-// Contains functions like start_minecraft_server() that use tokio::process::Command to spawn and manage the Minecraft server process asynchronously.
+//! Implementation of the Minecraft server process management.
+//!
+//! This file contains the implementation of the MinecraftServer struct
+//! that handles starting, stopping, and interacting with the Minecraft
+//! server process using Tokio's async process handling.
 
 use std::io::Result;
 use std::process::Stdio;
@@ -6,59 +10,78 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::Command;
 use tokio::sync::mpsc::UnboundedSender;
 
-/// Struct representing the Minecraft server process.
+/// Represents the Minecraft server process.
+///
+/// This struct manages the lifecycle of the Minecraft server process including:
+/// - Starting the server
+/// - Stopping the server
+/// - Sending commands to the server
+/// - Capturing and forwarding server output
 pub struct MinecraftServer {
-    /// The child process running the Minecraft server.
+    /// The child process running the Minecraft server, None if not running.
     child: Option<tokio::process::Child>,
-    /// A channel sender to forward log messages to other parts of your application.
+    /// Channel sender to forward log messages to other parts of the application.
     pub log_sender: UnboundedSender<String>,
 }
 
 impl MinecraftServer {
     /// Starts the Minecraft server process asynchronously.
     ///
-    /// This function spawns the process, redirects its stdout and stderr, and spawns tasks
-    /// to capture and forward the log output.
+    /// This function:
+    /// 1. Spawns the server process
+    /// 2. Sets up stdout and stderr redirection
+    /// 3. Creates tasks to capture and forward the log output
+    ///
+    /// # Arguments
+    /// * `log_sender` - Channel sender to forward log messages
+    ///
+    /// # Returns
+    /// * `Result<Self>` - New MinecraftServer instance or IO error
     pub async fn start(log_sender: UnboundedSender<String>) -> Result<Self> {
-        // Replace the path and any arguments with your server's executable details.
-        // TODO
-        // let mut command = Command::new("R:\\GameServers\\minecraftNeoforge1.21.1\\run.bat");
+        // Create the command for the server executable
         let mut command = Command::new("/home/roanm/Downloads/Server/run.sh");
-        // Set the working directory here.
+        // Set the working directory for the server
         command.current_dir("/home/roanm/Downloads/Server");
-        // Optionally add any necessary command-line arguments:
-        // command.arg("some_arg");
 
-        // Set up the process to capture stdout and stderr.
+        // Configure process I/O streams
         command
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
 
-        // Spawn the process.
+        // Spawn the server process
         let mut child = command.spawn()?;
 
-        // Handle stdout.
+        // Set up stdout handling
         if let Some(stdout) = child.stdout.take() {
             let mut reader = BufReader::new(stdout).lines();
             let sender_clone = log_sender.clone();
             tokio::spawn(async move {
                 while let Ok(Some(line)) = reader.next_line().await {
-                    // Forward each stdout line to the log channel.
-                    let _ = sender_clone.send(line);
+                    // Forward each stdout line to the log channel without duplicate printing
+                    if sender_clone.send(line).is_err() {
+                        println!("Failed to send stdout log to channel");
+                        break;
+                    }
                 }
+                println!("Stdout reader task completed");
             });
         }
 
-        // Handle stderr.
+        // Set up stderr handling
         if let Some(stderr) = child.stderr.take() {
             let mut reader = BufReader::new(stderr).lines();
             let sender_clone = log_sender.clone();
             tokio::spawn(async move {
                 while let Ok(Some(line)) = reader.next_line().await {
-                    // Prefix stderr lines with "ERROR:" for clarity.
-                    let _ = sender_clone.send(format!("ERROR: {}", line));
+                    // Prefix stderr lines with "ERROR:" for clarity but don't print duplicates
+                    let error_line = format!("ERROR: {}", line);
+                    if sender_clone.send(error_line).is_err() {
+                        println!("Failed to send stderr log to channel");
+                        break;
+                    }
                 }
+                println!("Stderr reader task completed");
             });
         }
 
@@ -70,8 +93,11 @@ impl MinecraftServer {
 
     /// Stops the Minecraft server process gracefully.
     ///
-    /// On Windows, this example simply kills the process. You might adjust the logic if you
-    /// have a more graceful shutdown command.
+    /// First attempts to send a "stop" command to the server via stdin.
+    /// If that fails, falls back to killing the process.
+    ///
+    /// # Returns
+    /// * `Result<()>` - Success or IO error
     pub async fn stop(&mut self) -> Result<()> {
         if let Some(child) = &mut self.child {
             // Attempt to gracefully shut down the server by sending "stop\n"
@@ -79,10 +105,10 @@ impl MinecraftServer {
                 stdin.write_all(b"stop\n").await?;
                 stdin.flush().await?;
             } else {
-                // If for some reason stdin is not available, fallback to killing the process.
+                // Fallback to killing the process if stdin is not available
                 child.kill().await?;
             }
-            // Wait for the server process to exit gracefully.
+            // Wait for the server process to exit
             child.wait().await?;
             self.child = None;
         }
@@ -90,6 +116,9 @@ impl MinecraftServer {
     }
 
     /// Checks if the Minecraft server process is currently running.
+    ///
+    /// # Returns
+    /// * `bool` - True if the server is running, false otherwise
     pub fn is_running(&self) -> bool {
         self.child.is_some()
     }
@@ -100,8 +129,7 @@ impl MinecraftServer {
     /// * `command` - The command to send to the server
     ///
     /// # Returns
-    /// * `Ok(())` if the command was sent successfully
-    /// * `Err` if there was an error sending the command
+    /// * `Result<()>` - Success or IO error
     pub async fn send_command(&mut self, command: &str) -> Result<()> {
         if let Some(child) = &mut self.child {
             if let Some(stdin) = child.stdin.as_mut() {

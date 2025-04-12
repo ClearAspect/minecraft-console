@@ -1,6 +1,7 @@
-//  Defines HTTP handlers (e.g., /start, /stop). They can call functions from server.rs and update the shared state.
-
-// src/routes.rs
+//! HTTP request handlers for the application.
+//!
+//! This file contains the implementation of HTTP handlers for various
+//! endpoints like starting/stopping the server and checking status.
 
 use crate::state::AppState;
 use crate::websocket::ws_index;
@@ -8,6 +9,10 @@ use actix_web::{web, HttpResponse, Responder};
 use std::sync::{Arc, Mutex};
 
 /// HTTP handler to start the Minecraft server.
+///
+/// # Returns
+/// * Success response if the server was started successfully
+/// * Error response with details if the server failed to start
 pub async fn start_handler(state: web::Data<Arc<Mutex<AppState>>>) -> impl Responder {
     let mut app_state = state.lock().unwrap();
     match app_state.start_minecraft().await {
@@ -17,6 +22,10 @@ pub async fn start_handler(state: web::Data<Arc<Mutex<AppState>>>) -> impl Respo
 }
 
 /// HTTP handler to stop the Minecraft server.
+///
+/// # Returns
+/// * Success response if the server was stopped successfully
+/// * Error response with details if the server failed to stop
 pub async fn stop_handler(state: web::Data<Arc<Mutex<AppState>>>) -> impl Responder {
     let mut app_state = state.lock().unwrap();
     match app_state.stop_minecraft().await {
@@ -26,6 +35,9 @@ pub async fn stop_handler(state: web::Data<Arc<Mutex<AppState>>>) -> impl Respon
 }
 
 /// HTTP handler to check the server status.
+///
+/// # Returns
+/// * Response indicating whether the server is running or not
 pub async fn status_handler(state: web::Data<Arc<Mutex<AppState>>>) -> impl Responder {
     let app_state = state.lock().unwrap();
     if app_state.is_running() {
@@ -36,10 +48,12 @@ pub async fn status_handler(state: web::Data<Arc<Mutex<AppState>>>) -> impl Resp
 }
 
 /// Configures the application routes.
+///
+/// # Arguments
+/// * `cfg` - Service config to register routes with
 pub fn init_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(web::resource("/start").route(web::post().to(start_handler)));
     cfg.service(web::resource("/stop").route(web::post().to(stop_handler)));
     cfg.service(web::resource("/status").route(web::get().to(status_handler)));
     cfg.service(web::resource("/ws").route(web::get().to(ws_index)));
-    // You can later add additional endpoints, such as a WebSocket route for /console.
 }

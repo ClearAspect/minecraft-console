@@ -1,13 +1,37 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useWebSocket } from "../hooks/useWebSocket";
 
+// Debug counter to track component mounts/remounts
+let mountCounter = 0;
+
 const Console: React.FC = () => {
-	// Update the URL if needed.
+	const mountId = useRef(++mountCounter);
+	console.log(`Console component mounted/remounted (ID: ${mountId.current})`);
+
+	// Use singleton WebSocket manager through the hook
 	const { messages, sendMessage, connected } = useWebSocket({
 		url: "/ws",
+		reconnectInterval: 3000,
+		maxReconnectAttempts: 5,
 	});
 
 	const [command, setCommand] = useState("");
+	const consoleRef = useRef<HTMLDivElement>(null);
+
+	// Debug useEffect to track component lifecycle
+	useEffect(() => {
+		console.log(`Console component ${mountId.current} mounted`);
+		return () => {
+			console.log(`Console component ${mountId.current} unmounted`);
+		};
+	}, []);
+
+	// Auto-scroll to bottom when new messages arrive
+	useEffect(() => {
+		if (consoleRef.current) {
+			consoleRef.current.scrollTop = consoleRef.current.scrollHeight;
+		}
+	}, [messages]);
 
 	const handleSendCommand = () => {
 		if (command.trim() !== "") {
@@ -16,10 +40,37 @@ const Console: React.FC = () => {
 		}
 	};
 
+	// More aggressive filtering of connection messages
+	const filteredMessages = messages.reduce((acc: string[], message: string, index: number) => {
+		// Skip all "Connected to Minecraft console WebSocket" messages except the first one
+		if (message.includes("Connected to Minecraft console WebSocket")) {
+			// Only keep the first connection message
+			const previousConnections = acc.filter(m => m.includes("Connected to Minecraft console WebSocket"));
+			if (previousConnections.length > 0) {
+				return acc;
+			}
+		}
+
+		// Skip duplicate connection/disconnection messages
+		if (index > 0) {
+			if (message === "Connected to server console" && messages[index - 1] === "Disconnected from server console") {
+				return acc;
+			}
+			if (message === "Disconnected from server console" &&
+				acc.length > 0 &&
+				acc[acc.length - 1].includes("Connected to Minecraft console WebSocket")) {
+				return acc;
+			}
+		}
+
+		return [...acc, message];
+	}, []);
+
 	return (
 		<div style={{ marginTop: "20px" }}>
 			<h2>Server Console</h2>
 			<div
+				ref={consoleRef}
 				style={{
 					height: "300px",
 					overflowY: "auto",
@@ -29,7 +80,7 @@ const Console: React.FC = () => {
 					fontFamily: "monospace",
 				}}
 			>
-				{messages.map((msg, idx) => (
+				{filteredMessages.map((msg, idx) => (
 					<div key={idx}>{msg}</div>
 				))}
 			</div>
@@ -42,12 +93,28 @@ const Console: React.FC = () => {
 					onKeyDown={(e) => {
 						if (e.key === "Enter") handleSendCommand();
 					}}
-					style={{ width: "80%" }}
+					disabled={!connected}
+					style={{
+						width: "80%",
+						opacity: connected ? 1 : 0.5
+					}}
 				/>
-				<button onClick={handleSendCommand}>Send</button>
+				<button
+					onClick={handleSendCommand}
+					disabled={!connected}
+					style={{
+						opacity: connected ? 1 : 0.5
+					}}
+				>
+					Send
+				</button>
 			</div>
-			<div>
-				<small>WebSocket status: {connected ? "Connected" : "Disconnected"}</small>
+			<div style={{
+				margin: "10px 0",
+				color: connected ? "green" : "red",
+				fontWeight: "bold"
+			}}>
+				WebSocket status: {connected ? "Connected" : "Disconnected"}
 			</div>
 		</div>
 	);
