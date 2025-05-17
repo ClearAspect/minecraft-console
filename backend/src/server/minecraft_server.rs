@@ -39,9 +39,9 @@ impl MinecraftServer {
     /// * `Result<Self>` - New MinecraftServer instance or IO error
     pub async fn start(log_sender: UnboundedSender<String>) -> Result<Self> {
         // Create the command for the server executable
-        let mut command = Command::new("/home/roanm/Downloads/Server/run.sh");
+        let mut command = Command::new(r#"R:\GameServers\may25minecraftNeoforge1.21.1\run.bat"#);
         // Set the working directory for the server
-        command.current_dir("/home/roanm/Downloads/Server");
+        command.current_dir(r#"R:\GameServers\may25minecraftNeoforge1.21.1"#);
 
         // Configure process I/O streams
         command
