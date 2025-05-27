@@ -59,13 +59,14 @@ async fn main() -> std::io::Result<()> {
     });
 
     // Print server startup message
-    println!("Starting server on http://127.0.0.1:8080");
+    println!("Starting server on http://0.0.0.0:8080");
 
     // Configure and run the Actix-web server
     HttpServer::new(move || {
         // Configure CORS for frontend communication
         let cors = Cors::default()
             .allowed_origin("http://localhost:3000")
+            .allowed_origin("http://192.168.10.208:3000")
             .allowed_methods(vec!["GET", "POST"])
             .allowed_headers(vec![http::header::AUTHORIZATION, http::header::ACCEPT])
             .allowed_header(http::header::CONTENT_TYPE)
@@ -78,7 +79,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(state.clone()))
             .configure(routes::init_routes)
     })
-    .bind("127.0.0.1:8080")?
+    .bind("0.0.0.0:8080")?
     .run()
     .await
 }

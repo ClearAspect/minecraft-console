@@ -69,7 +69,9 @@ class WebSocketManager {
 
 		// Calculate wsUrl
 		const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-		const wsUrl = this.url.startsWith('ws') ? this.url : `${wsProtocol}//localhost:8080${this.url}`;
+		const wsUrl = this.url.startsWith('ws')
+			? this.url
+			: `${wsProtocol}//${window.location.hostname}:8080${this.url}`;
 
 		console.log(`WebSocket: Creating new connection to ${wsUrl}`);
 

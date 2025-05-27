@@ -1,5 +1,5 @@
 // Use absolute URL with port for the backend server
-const BASE_URL = "http://localhost:8080";
+const BASE_URL = "http://192.168.10.208:8080";
 
 async function handleResponse(response: Response): Promise<string> {
 	if (!response.ok) {
@@ -14,7 +14,7 @@ export async function startServer(filePath: string): Promise<string> {
 		const response = await fetch(`${BASE_URL}/start`, {
 			method: "POST",
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ filePath }),
+			body: JSON.stringify({ file_path: filePath }),
 		});
 		return handleResponse(response);
 	} catch (error) {
