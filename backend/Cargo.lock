@@ -307,6 +307,7 @@ dependencies = [
  "actix-cors",
  "actix-web",
  "actix-web-actors",
+ "serde",
  "tokio",
 ]
 

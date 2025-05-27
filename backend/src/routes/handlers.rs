@@ -6,6 +6,7 @@
 use crate::state::AppState;
 use crate::websocket::ws_index;
 use actix_web::{web, HttpResponse, Responder};
+use serde::Deserialize;
 use std::sync::{Arc, Mutex};
 
 /// HTTP handler to start the Minecraft server.
@@ -13,9 +14,17 @@ use std::sync::{Arc, Mutex};
 /// # Returns
 /// * Success response if the server was started successfully
 /// * Error response with details if the server failed to start
-pub async fn start_handler(state: web::Data<Arc<Mutex<AppState>>>) -> impl Responder {
+#[derive(Deserialize)]
+pub struct StartRequest {
+    pub file_path: String,
+}
+
+pub async fn start_handler(
+    state: web::Data<Arc<Mutex<AppState>>>,
+    req: web::Json<StartRequest>,
+) -> impl Responder {
     let mut app_state = state.lock().unwrap();
-    match app_state.start_minecraft().await {
+    match app_state.start_minecraft(Some(req.file_path.clone())).await {
         Ok(_) => HttpResponse::Ok().body("Minecraft server started."),
         Err(e) => HttpResponse::InternalServerError().body(format!("Error starting server: {}", e)),
     }

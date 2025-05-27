@@ -29,13 +29,13 @@ impl AppState {
         }
     }
 
-    /// Starts the Minecraft server if it isn’t already running.
+    /// Starts the Minecraft server if it isn't already running.
     ///
     /// This method calls the `MinecraftServer::start` function from `server.rs`
     /// and stores the resulting server instance in the state.
-    pub async fn start_minecraft(&mut self) -> Result<()> {
+    pub async fn start_minecraft(&mut self, file_path: Option<String>) -> Result<()> {
         if self.minecraft_server.is_none() {
-            let server = MinecraftServer::start(self.log_sender.clone()).await?;
+            let server = MinecraftServer::start(self.log_sender.clone(), file_path).await?;
             self.minecraft_server = Some(server);
         }
         Ok(())

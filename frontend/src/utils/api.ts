@@ -9,10 +9,12 @@ async function handleResponse(response: Response): Promise<string> {
 	return response.text();
 }
 
-export async function startServer(): Promise<string> {
+export async function startServer(filePath: string): Promise<string> {
 	try {
 		const response = await fetch(`${BASE_URL}/start`, {
 			method: "POST",
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ filePath }),
 		});
 		return handleResponse(response);
 	} catch (error) {

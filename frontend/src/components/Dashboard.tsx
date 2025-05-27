@@ -8,12 +8,13 @@ const Dashboard: React.FC = () => {
 	const [message, setMessage] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const [filePath, setFilePath] = useState("");
 
 	const handleStart = async () => {
 		setIsLoading(true);
 		setError(null);
 		try {
-			const res = await startServer();
+			const res = await startServer(filePath);
 			setMessage(res);
 			await updateStatus();
 		} catch (error) {
@@ -94,6 +95,13 @@ const Dashboard: React.FC = () => {
 				</button>
 			</div>
 			<div style={{ margin: '20px 0' }}>
+				<input
+					type="text"
+					placeholder="Path to server file (e.g. /path/to/run.bat)"
+					value={filePath}
+					onChange={e => setFilePath(e.target.value)}
+					style={{ width: '60%', marginRight: '10px', padding: '8px' }}
+				/>
 				<button
 					onClick={handleStart}
 					disabled={isLoading || !status.toLowerCase().includes('not running')}

@@ -5,6 +5,7 @@
 //! server process using Tokio's async process handling.
 
 use std::io::Result;
+use std::path::Path;
 use std::process::Stdio;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::Command;
@@ -34,14 +35,29 @@ impl MinecraftServer {
     ///
     /// # Arguments
     /// * `log_sender` - Channel sender to forward log messages
+    /// * `file_path` - Optional file path to the server executable
     ///
     /// # Returns
     /// * `Result<Self>` - New MinecraftServer instance or IO error
-    pub async fn start(log_sender: UnboundedSender<String>) -> Result<Self> {
-        // Create the command for the server executable
-        let mut command = Command::new(r#"R:\GameServers\may25minecraftNeoforge1.21.1\run.bat"#);
-        // Set the working directory for the server
-        command.current_dir(r#"R:\GameServers\may25minecraftNeoforge1.21.1"#);
+    pub async fn start(
+        log_sender: UnboundedSender<String>,
+        file_path: Option<String>,
+    ) -> Result<Self> {
+        let (cmd_path, working_dir) = if let Some(ref path) = file_path {
+            let p = Path::new(path);
+            let dir = p
+                .parent()
+                .map(|d| d.to_path_buf())
+                .unwrap_or_else(|| std::env::current_dir().unwrap());
+            (path.clone(), dir)
+        } else {
+            (
+                r#"R:\GameServers\may25minecraftNeoforge1.21.1\run.bat"#.to_string(),
+                std::path::PathBuf::from(r#"R:\GameServers\may25minecraftNeoforge1.21.1"#),
+            )
+        };
+        let mut command = Command::new(cmd_path);
+        command.current_dir(working_dir);
 
         // Configure process I/O streams
         command
