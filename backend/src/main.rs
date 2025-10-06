@@ -63,9 +63,14 @@ async fn main() -> std::io::Result<()> {
 
     // Configure and run the Actix-web server
     HttpServer::new(move || {
-        // Configure CORS for frontend communication
+        // Configure CORS for frontend communication - allow localhost and 192.168.x.x network
         let cors = Cors::default()
             .allowed_origin("http://localhost:3000")
+            .allowed_origin_fn(|origin, _req_head| {
+                let origin_str = origin.as_str();
+                // Allow 192.168.x.x IPs on port 3000
+                origin_str.starts_with("http://192.168.") && origin_str.ends_with(":3000")
+            })
             .allowed_methods(vec!["GET", "POST"])
             .allowed_headers(vec![http::header::AUTHORIZATION, http::header::ACCEPT])
             .allowed_header(http::header::CONTENT_TYPE)
