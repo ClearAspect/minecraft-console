@@ -66,7 +66,6 @@ async fn main() -> std::io::Result<()> {
         // Configure CORS for frontend communication
         let cors = Cors::default()
             .allowed_origin("http://localhost:3000")
-            .allowed_origin("http://192.168.10.208:3000")
             .allowed_methods(vec!["GET", "POST"])
             .allowed_headers(vec![http::header::AUTHORIZATION, http::header::ACCEPT])
             .allowed_header(http::header::CONTENT_TYPE)

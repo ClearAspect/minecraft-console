@@ -51,9 +51,11 @@ impl MinecraftServer {
                 .unwrap_or_else(|| std::env::current_dir().unwrap());
             (path.clone(), dir)
         } else {
+            // Default to looking for server files in current directory or common locations
+            let current_dir = std::env::current_dir().unwrap();
             (
-                r#"R:\GameServers\may25minecraftNeoforge1.21.1\run.bat"#.to_string(),
-                std::path::PathBuf::from(r#"R:\GameServers\may25minecraftNeoforge1.21.1"#),
+                "server.jar".to_string(), // Generic default - user should specify path
+                current_dir,
             )
         };
         let mut command = Command::new(cmd_path);

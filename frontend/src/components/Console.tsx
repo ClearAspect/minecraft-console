@@ -1,12 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useWebSocket } from "../hooks/useWebSocket";
 
-// Debug counter to track component mounts/remounts
-let mountCounter = 0;
-
 const Console: React.FC = () => {
-	const mountId = useRef(++mountCounter);
-	console.log(`Console component mounted/remounted (ID: ${mountId.current})`);
 
 	// Use singleton WebSocket manager through the hook
 	const { messages, sendMessage, connected } = useWebSocket({
@@ -18,13 +13,6 @@ const Console: React.FC = () => {
 	const [command, setCommand] = useState("");
 	const consoleRef = useRef<HTMLDivElement>(null);
 
-	// Debug useEffect to track component lifecycle
-	useEffect(() => {
-		console.log(`Console component ${mountId.current} mounted`);
-		return () => {
-			console.log(`Console component ${mountId.current} unmounted`);
-		};
-	}, []);
 
 	// Auto-scroll to bottom when new messages arrive
 	useEffect(() => {

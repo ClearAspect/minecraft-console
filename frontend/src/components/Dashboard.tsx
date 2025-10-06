@@ -45,16 +45,7 @@ const Dashboard: React.FC = () => {
 	const updateStatus = async () => {
 		try {
 			const stat = await fetchStatus();
-			console.log("Server status:", stat); // Debug log to see exactly what's being returned
 			setStatus(stat);
-
-			// Debug log for button states with more detailed information
-			console.log("Status string:", stat);
-			console.log("Start button disabled:", isLoading || !stat.toLowerCase().includes('not running'));
-			console.log("Stop button disabled:", isLoading || stat.toLowerCase().includes('not running'));
-			console.log("Status includes 'running':", stat.toLowerCase().includes('running'));
-			console.log("Status includes 'not running':", stat.toLowerCase().includes('not running'));
-
 			setError(null);
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : 'Network error';
@@ -127,12 +118,6 @@ const Dashboard: React.FC = () => {
 					{message}
 				</div>
 			)}
-			<div style={{ margin: '10px 0', padding: '8px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
-				<strong>Debug Info:</strong>
-				<div>Current status: "{status}"</div>
-				<div>Start button should be {!status.toLowerCase().includes('not running') ? 'disabled' : 'enabled'}</div>
-				<div>Stop button should be {status.toLowerCase().includes('not running') ? 'disabled' : 'enabled'}</div>
-			</div>
 			<Console />
 		</div>
 	);

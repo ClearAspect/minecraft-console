@@ -42,13 +42,11 @@ class WebSocketManager {
 	public connect(): Promise<void> {
 		// If we're already connected or connecting, return existing promise
 		if (this.socket && (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)) {
-			console.log("WebSocket: Already connected or connecting");
 			return Promise.resolve();
 		}
 
 		// If connection attempt already in progress, return the existing promise
 		if (this.connectionAttemptInProgress && this.connectPromise) {
-			console.log("WebSocket: Connection attempt in progress, returning existing promise");
 			return this.connectPromise;
 		}
 
@@ -73,7 +71,6 @@ class WebSocketManager {
 			? this.url
 			: `${wsProtocol}//${window.location.hostname}:8080${this.url}`;
 
-		console.log(`WebSocket: Creating new connection to ${wsUrl}`);
 
 		try {
 			// Create new WebSocket
@@ -173,7 +170,6 @@ class WebSocketManager {
 
 	// Handle WebSocket open event
 	private handleOpen(): void {
-		console.log("WebSocket: Connection established");
 		this.connectionAttemptInProgress = false;
 		this.reconnectCount = 0;
 
@@ -204,7 +200,6 @@ class WebSocketManager {
 
 	// Handle WebSocket close event
 	private handleClose(event: CloseEvent): void {
-		console.log(`WebSocket: Connection closed (code: ${event.code}, reason: ${event.reason || 'No reason provided'})`);
 		this.connectionAttemptInProgress = false;
 
 		// Notify connection state subscribers
@@ -228,7 +223,6 @@ class WebSocketManager {
 	// Schedule reconnection attempt
 	private scheduleReconnect(): void {
 		if (this.reconnectCount >= this.maxReconnectAttempts) {
-			console.log("WebSocket: Max reconnect attempts reached");
 			return;
 		}
 
@@ -239,7 +233,6 @@ class WebSocketManager {
 
 		// Calculate backoff time
 		const backoffTime = this.reconnectInterval * Math.pow(2, this.reconnectCount);
-		console.log(`WebSocket: Attempting reconnect ${this.reconnectCount + 1}/${this.maxReconnectAttempts} in ${backoffTime}ms`);
 
 		// Set timer for reconnect
 		this.reconnectTimer = setTimeout(() => {
@@ -307,7 +300,6 @@ export function useWebSocket({
 	// Send message function
 	const sendMessage = useCallback((message: string) => {
 		if (!wsManager.isConnected()) {
-			console.warn("WebSocket: Not connected, attempting to connect before sending");
 			if (componentMounted.current) {
 				setMessages(prev => [...prev, "Error: WebSocket is not connected, attempting to reconnect..."]);
 			}

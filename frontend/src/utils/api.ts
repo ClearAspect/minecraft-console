@@ -1,5 +1,5 @@
-// Use absolute URL with port for the backend server
-const BASE_URL = "http://192.168.10.208:8080";
+// Use dynamic URL that works on any machine - frontend and backend run on same host
+const BASE_URL = `http://${window.location.hostname}:8080`;
 
 async function handleResponse(response: Response): Promise<string> {
 	if (!response.ok) {
@@ -37,10 +37,8 @@ export async function fetchStatus(): Promise<string> {
 	try {
 		const response = await fetch(`${BASE_URL}/status`);
 		const statusText = await handleResponse(response);
-		console.log("Raw status response:", statusText);
 		return statusText;
 	} catch (error) {
-		console.error("Status fetch error:", error);
 		throw new Error(`Failed to fetch status: ${error instanceof Error ? error.message : 'Network error'}`);
 	}
 }
